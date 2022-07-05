@@ -13,22 +13,19 @@ import {
 } from '../../types';
 import { isSameAddress } from '../../utils';
 import {
+    _squareRoot,
+    _normalizeBalances,
     _calculateInvariant,
     _calcOutGivenIn,
     _calcInGivenOut,
     _findVirtualParams,
     _calculateNewSpotPrice,
+    _reduceFee,
+    _addFee,
     _derivativeSpotPriceAfterSwapExactTokenInForTokenOut,
     _derivativeSpotPriceAfterSwapTokenInForExactTokenOut,
     _getNormalizedLiquidity,
 } from './gyro2Math';
-import {
-    _normalizeBalances,
-    _reduceFee,
-    _addFee,
-    mulDown,
-    divDown,
-} from './helpers';
 
 export type Gyro2PoolPairData = PoolPairBase & {
     sqrtAlpha: BigNumber;
@@ -125,10 +122,10 @@ export class Gyro2Pool implements PoolBase {
             swapFee: this.swapFee,
             sqrtAlpha: tokenInIsToken0
                 ? this.sqrtAlpha
-                : divDown(ONE, this.sqrtBeta),
+                : ONE.mul(ONE).div(this.sqrtBeta),
             sqrtBeta: tokenInIsToken0
                 ? this.sqrtBeta
-                : divDown(ONE, this.sqrtAlpha),
+                : ONE.mul(ONE).div(this.sqrtAlpha),
         };
 
         return poolPairData;
@@ -167,14 +164,14 @@ export class Gyro2Pool implements PoolBase {
         if (swapType === SwapTypes.SwapExactIn) {
             return bnum(
                 formatFixed(
-                    mulDown(poolPairData.balanceIn, this.MAX_IN_RATIO),
+                    poolPairData.balanceIn.mul(this.MAX_IN_RATIO).div(ONE),
                     poolPairData.decimalsIn
                 )
             );
         } else {
             return bnum(
                 formatFixed(
-                    mulDown(poolPairData.balanceOut, this.MAX_OUT_RATIO),
+                    poolPairData.balanceOut.mul(this.MAX_OUT_RATIO).div(ONE),
                     poolPairData.decimalsOut
                 )
             );
@@ -222,7 +219,8 @@ export class Gyro2Pool implements PoolBase {
             normalizedBalances[1],
             inAmountLessFee,
             virtualParamIn,
-            virtualParamOut
+            virtualParamOut,
+            invariant
         );
 
         return bnum(formatFixed(outAmount, 18));
@@ -254,7 +252,8 @@ export class Gyro2Pool implements PoolBase {
             normalizedBalances[1],
             outAmount,
             virtualParamIn,
-            virtualParamOut
+            virtualParamOut,
+            invariant
         );
         const inAmount = _addFee(inAmountLessFee, poolPairData.swapFee);
 
@@ -288,7 +287,8 @@ export class Gyro2Pool implements PoolBase {
             normalizedBalances[1],
             inAmountLessFee,
             virtualParamIn,
-            virtualParamOut
+            virtualParamOut,
+            invariant
         );
         const newSpotPrice = _calculateNewSpotPrice(
             normalizedBalances,
@@ -327,7 +327,8 @@ export class Gyro2Pool implements PoolBase {
             normalizedBalances[1],
             outAmount,
             virtualParamIn,
-            virtualParamOut
+            virtualParamOut,
+            invariant
         );
         const inAmount = _addFee(inAmountLessFee, poolPairData.swapFee);
         const newSpotPrice = _calculateNewSpotPrice(
@@ -369,7 +370,8 @@ export class Gyro2Pool implements PoolBase {
             normalizedBalances[1],
             inAmountLessFee,
             virtualParamIn,
-            virtualParamOut
+            virtualParamOut,
+            invariant
         );
         const derivative = _derivativeSpotPriceAfterSwapExactTokenInForTokenOut(
             normalizedBalances,
@@ -406,7 +408,8 @@ export class Gyro2Pool implements PoolBase {
             normalizedBalances[1],
             outAmount,
             virtualParamIn,
-            virtualParamOut
+            virtualParamOut,
+            invariant
         );
         const inAmount = _addFee(inAmountLessFee, poolPairData.swapFee);
 
