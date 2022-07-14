@@ -29,6 +29,7 @@ export class PoolCacher {
             this._finishedFetching = false;
             this.pools = [];
             console.error(`Error: fetchPools(): ${err.message}`);
+            console.error(err);
             return false;
         }
     }

@@ -69,6 +69,7 @@ export class SOR {
      * @returns {boolean} True if pools fetched successfully, False if not.
      */
     async fetchPools(): Promise<boolean> {
+        console.log(this.poolCacher.fetchPools);
         return this.poolCacher.fetchPools();
     }
 

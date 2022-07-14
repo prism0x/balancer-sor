@@ -24,6 +24,7 @@ import {
 import { buildTx, printOutput } from './utils';
 
 import vaultArtifact from '../../src/abi/Vault.json';
+import { exit } from 'process';
 
 // Setup SOR with data services
 function setUp(networkId: Network, provider: JsonRpcProvider): SOR {
