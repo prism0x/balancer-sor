@@ -25,6 +25,7 @@ import {
     SorConfig,
 } from './types';
 import { Zero } from '@ethersproject/constants';
+import fs from 'fs';
 
 export class SOR {
     private readonly poolCacher: PoolCacher;
@@ -178,6 +179,10 @@ export class SOR {
             pools,
             swapOptions
         );
+        // console.log(pools);
+        // fs.writeFile('./pools.json', JSON.stringify(pools), {}, (err) => {
+        //     return undefined;
+        // });
 
         if (paths.length == 0) return cloneDeep(EMPTY_SWAPINFO);
 
