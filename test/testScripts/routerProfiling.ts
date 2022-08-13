@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 // import { SOR, SwapInfo, SwapTypes } from '../../src';
+import * as fs from 'fs';
 import { getBestPaths } from '../../src/router';
 import {
     NewPath,
@@ -19,13 +20,42 @@ import { SorConfig } from '../../src';
 import { formatSwaps } from '../../src/formatSwaps';
 import { BigNumber as OldBigNumber } from '../../src/utils/bignumber';
 import { ADDRESSES, Network } from './constants';
+import { sanitizePoolData } from './helper';
 
-import { nullsToUndefined, sanitizePoolData } from './helper';
-
-import { default as pools } from '../../pools.json';
+// import { default as pools } from '../../pools.json';
 import { Zero } from '@ethersproject/constants';
 import cloneDeep from 'lodash.clonedeep';
 import { EMPTY_SWAPINFO } from '../../src/constants';
+
+import { Command } from 'commander';
+
+const program = new Command();
+program
+    .name('router-profiling')
+    .description('Balancer SOR script to compare different routing engines')
+    .requiredOption(
+        '-p, --pools <poolsJSON>',
+        'JSON file that contains pool information.'
+    )
+    .requiredOption('-i, --tokenIn <tokenIn>', 'Address of the input token.')
+    .requiredOption('-o, --tokenOut <tokenOut>', 'Address of the output token.')
+    .requiredOption('-q, --quantity <quantity>', 'Swap quantity.')
+    .requiredOption('-t, --type <swapType>', 'Swap type.');
+program.parse();
+const args = program.opts();
+
+const pools = JSON.parse(fs.readFileSync(args.pools, 'utf8'));
+
+// const swapType = <SwapTypes> SwapTypes[args.type];
+let swapType;
+if (args.type === 'SwapExactIn') {
+    swapType = SwapTypes.SwapExactIn;
+} else if (args.type === 'SwapExactOut') {
+    swapType = SwapTypes.SwapExactOut;
+} else {
+    throw Error('Invalid swap type: ' + args.type);
+}
+const swapAmount = BigNumber.from(args.quantity);
 
 // GNO: 0x6810e776880c02933d47db1b9fc05908e5386b96
 // WETH: 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2
@@ -87,7 +117,7 @@ function processSwaps(
     routeProposer: RouteProposer
 ): SwapInfo {
     if (pools.length === 0) return cloneDeep(EMPTY_SWAPINFO);
-    console.log(pools.length);
+    // console.log(pools.length);
     const paths = routeProposer.getCandidatePaths(
         tokenIn,
         tokenOut,
@@ -95,7 +125,7 @@ function processSwaps(
         pools,
         swapOptions
     );
-    console.log(paths);
+    // console.log(paths);
     // fs.writeFile('./pools.json', JSON.stringify(pools), {}, (err) => {
     //     return undefined;
     // });
@@ -203,7 +233,7 @@ const options: SwapOptions = {
     timestamp: Math.floor(Date.now() / 1000),
     forceRefresh: false,
 };
-const swapAmount = parseFixed('3000', 18);
+// const swapAmount = parseFixed('3000', 18);
 
 const config: SorConfig = {
     chainId: Network.MAINNET, //1
@@ -216,14 +246,17 @@ const config: SorConfig = {
 };
 const routeProposer = new RouteProposer(config);
 const swapInfo = processSwaps(
-    ADDRESSES[Network.MAINNET].BAL.address,
-    ADDRESSES[Network.MAINNET].USDC.address,
-    SwapTypes.SwapExactIn,
+    args.tokenIn,
+    args.tokenOut,
+    // ADDRESSES[Network.MAINNET].BAL.address,
+    // ADDRESSES[Network.MAINNET].USDC.address,
+    swapType,
     swapAmount,
     testPools,
     options,
     routeProposer
 );
+
 // const swapInfo = processSwaps(
 //     'BAL',
 //     'WETH',
@@ -233,4 +266,4 @@ const swapInfo = processSwaps(
 //     options,
 //     routeProposer
 // );
-console.log(swapInfo);
+console.log(JSON.stringify(swapInfo, null, 2));
